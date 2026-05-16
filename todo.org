@@ -1,0 +1,162 @@
+#+TITLE: KaziLab Documentation — Offene Punkte
+#+DATE: 2026-05-16
+
+Aktueller Stand: starke Coverage der Build-Side (README, background,
+hardware, architecture, network, implementation, disaster_recovery).
+Fast nichts zur Run-Side. Wer das System nach dem Aufbau betreiben,
+debuggen oder uebernehmen soll, faellt aus allen Wolken.
+
+* Fehlende Dokumente
+
+** TODO [#A] operations.org — Tagesgeschaeft & Schuljahres-Rhythmus
+Das eigentliche Administrators Handbook. Kein Aufbau, sondern Betrieb.
+
+Inhalt:
+- Schuljahresbeginn: 60-rein-60-raus
+  - students.csv vorbereiten (Format, Pflichtfelder)
+  - provision-students.sh durchlaufen lassen
+  - Initial-Passwoerter ausgeben/drucken (must-change on first login)
+  - Verifizieren dass alle Logins funktionieren
+- Schuljahresende:
+  - Graduierte archivieren (ZFS-Snapshot vom Home, Account disable)
+  - Daten an Schueler auf USB ausgeben falls gewuenscht
+  - Klassenmaterial-Pruefung (was wird weitergetragen, was geloescht)
+- Software-Updates:
+  - NixOS Channel Bump (=nixpkgs-unstable= -> neuer Release)
+  - =nixos-rebuild switch --flake .#mkuu1=
+  - Client-Closure neu bauen, Pfad in hosts/web/configuration.nix
+    aktualisieren, web01 switchen
+  - Clients reboot triggern (per SSH oder physisch)
+- Rollback-Verfahren wenn Rebuild kaputt:
+  - =nixos-rebuild switch --rollback= auf mkuu1
+  - Bei Client: alten clientSystem-Store-Pfad zurueck in web config
+- User-Verwaltung im Alltag:
+  - Passwort eines Schuelers zuruecksetzen
+  - Neuen Schueler nach Schuljahresbeginn nachtragen
+  - Account temporaer sperren (Disziplinarmassnahme)
+- Backup-Rotation:
+  - Wann welche der zwei USB-Platten anschliessen
+  - Wie verifizieren dass das letzte Backup vollstaendig ist
+  - Wo die Platten zwischen den Rotationen lagern (Brandschutz)
+
+** TODO [#A] runbook.org — Symptom -> Diagnose -> Fix
+Wenn's brennt. Pro Symptom kurz und konkret.
+
+Faelle die abgedeckt sein sollten:
+- "Schueler kann sich nicht anmelden"
+  - Account in lldap pruefen, sssd-Cache invalidieren, sssctl user-checks
+- "Mein Home-Verzeichnis ist weg / leer"
+  - NFS-Mount check, ZFS dataset, ggf. aus Snapshot wiederherstellen
+- "Client bootet nicht"
+  - PXE-Stadium (kein DHCP / kein iPXE / kein NFS / Hang in systemd)
+  - Wo die Bootmeldung typischerweise stehenbleibt
+- "Container startet nicht / startet immer wieder neu"
+  - =machinectl status=, journalctl, NixOS-Activation-Fehler
+- "Internet ist langsam"
+  - MikroTik QoS, Airtel-Tarif-Status, evtl. Schueler-Tab mit Stream
+- "Drucker / USB-Geraet wird nicht erkannt"
+- "ZFS scrub findet Fehler"
+  - Lesefehler vs. Pruefsummen-Fehler unterscheiden, Reaktion je nach Schwere
+- "UPS piept dauerhaft"
+- "Bildschirm flackert" (FIFO-Underrun, GPU)
+
+Jeder Eintrag: ein Code-Block mit den 2-3 Diagnose-Kommandos +
+ein Code-Block mit dem Fix. Kurz, kein Roman.
+
+** TODO [#A] onsite.org — Anleitung fuer Lehrer ohne Admin-Zugriff
+Was darf der Lehrer in Tansania allein tun, wenn Axel in DE nicht
+erreichbar ist?
+
+Inhalt:
+- Erlaubt:
+  - Hard-Reset eines haengenden Clients (5 Sek Powerknopf)
+  - Server neu starten ueber USV-Knopf (wenn vorher graceful shutdown
+    auf dem Server selber)
+  - Backup-USB-Platte tauschen nach festem Plan
+  - Maus/Tastatur/Kabel austauschen
+  - Drucker-Papier nachfuellen, Patronen wechseln
+- Nicht anfassen:
+  - SSH-Terminals
+  - MikroTik Web-UI
+  - ZFS / nixos-rebuild
+  - lldap Web-UI
+- Notfall: Was tun bei Stromausfall mit defekter USV?
+- Eskalations-Kontakte:
+  - Axel (WhatsApp, Email)
+  - Lokaler Shop (InnoSykes Moshi) — fuer Hardware-Defekte
+- Telefonliste in einer Mappe an der Wand neben dem Server
+
+** TODO [#B] handover.org — Successor-Anleitung
+Bus-Factor 1 ist ein Risiko fuer eine Schule mit 10-Jahres-Zielperspektive.
+
+Inhalt:
+- Repos und ihre Rollen (=nixos= vs. =KaziLab=)
+- SSH-Keys: wo gespeichert, wie rotieren
+- sops age-keys: wo der private Key liegt, wie ihn weitergeben
+- WireGuard-Config: VPN-Endpunkte, wer hat Zugriff
+- GitHub-Org NgarumaVTC: wer ist Owner, Mitglieder rotieren
+- Kritische Kontakte:
+  - Schule (Direktor, IT-Verantwortlicher vor Ort)
+  - InnoSykes Computer, Moshi (Hardware)
+  - Airtel-Tarif (Konto, Rufnummer)
+  - Zukunft bauen e.V. (Finanzierung)
+- Zugangsdaten-Inventar (KeePassXC-DB wo, wie freischalten)
+- Erwartete Stunden pro Monat fuer den Betrieb realistisch beschreiben
+
+** TODO [#B] monitoring.org — Proaktive Fehler-Erkennung
+Kann auch erstmal als Abschnitt in operations.org leben, bis es eigenstaendig genug ist.
+
+Inhalt:
+- Was wollen wir messen?
+  - ZFS-Status (=zpool status -x=)
+  - UPS-Lade-Stand (NUT)
+  - Backup-Erfolg (letzter zfs-send Zeitstempel)
+  - Container-Health (=systemctl status container@*=)
+  - Disk-SMART (regelmaessig automatisiert)
+  - Klassen-PC-Erreichbarkeit (Ping/SSH-Test im Cron)
+- Wie alarmieren wir Axel in DE?
+  - Mail via SMTP (z.B. einen Mailcow-Provider, oder
+    direkter Versand)
+  - Push via ntfy.sh oder Telegram-Bot
+  - "Stilles Alarm-Wartet" Heartbeat ueber WireGuard
+- Welche Schwellenwerte sind echte Probleme vs. Hintergrundrauschen?
+- Dashboards: Grafana/Prometheus auf mkuu1?
+  Oder schlankeres Setup (just-mail-on-failure)?
+
+** TODO [#C] maintenance.org — Wartungs-Kalender
+Kann auch in operations.org bleiben bis eigenstaendig.
+
+Inhalt:
+- Woechentlich: USB-Backup-Platte tauschen, ZFS-Status-Mail lesen
+- Monatlich: ZFS-Scrub (automatisch via sanoid?), Container-Update-Run
+- Quartalsweise: Staubfilter reinigen, Kabelmanagement pruefen,
+  USV-Batterie-Selbsttest
+- Halbjaehrlich: Microcode-Update pruefen (neuer intel-ucode Release?)
+- Jaehrlich: NixOS Major-Upgrade, BIOS-Check (Firmware-Updates),
+  Festplatten-Lebensdauer (TBW-Restwert) erfassen
+
+** TODO [#C] security.org — Sicherheits-Policies & Incident Response
+Inhalt:
+- Passwort-Policy fuer Schueler (Mindestlaenge, must-change)
+- Audit-Log: wo werden Logins protokolliert, wie lange aufgehoben
+- Account-Lockout-Verhalten (Brute-Force-Schutz, fail2ban?)
+- Was tun bei Verdacht auf Schueler-Hack-Versuche
+- Was tun bei verlorener WireGuard-VPN-Verbindung waehrend Incident
+- Datenschutz: was darf Axel von DE aus an Schueler-Daten sehen
+  (Stichwort: Tanzanian Personal Data Protection Act 2022)
+- WhatsApp-Gruppe / Slack-Channel fuer Security-Coordination
+
+* Bestehende Dateien — kleinere TODOs
+
+** TODO [#C] README.org: Doku-Tabelle aktualisieren
+Sobald neue Dokumente entstehen, in =* Documentation= ergaenzen.
+
+** TODO [#C] implementation.org: section 4.2 Client-Pfad-Pflege
+Aktuell steht da nur "update clientSystem store path in hosts/web/configuration.nix"
+— sollte mit einem Beispiel-Befehl ausgestattet werden (=nix build .#nixosConfigurations.client...=).
+
+** TODO [#C] background.org: "LTSP-inspired" ueberholt
+Zeile "All computation runs on one server" stimmt nicht mehr — Clients
+haben jetzt lokales XFCE mit Firefox/LibreOffice/etc. Schwerlast-Apps
+(FreeCAD, DBeaver, GIMP-grosse-Dateien) koennten weiter via RDP auf den
+Server, aber das ist optional. Formulierung anpassen.

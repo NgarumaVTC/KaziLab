@@ -35,7 +35,7 @@ similar constraints.
 | Zero Maintenance | NixOS declarative config. Rebuild once, all 20 desktops follow.       |
 | Zero Waste       | Refurbished enterprise hardware. 10-year target lifespan.             |
 | Zero Downtime    | ZFS mirror + UPS + WireGuard remote access from anywhere in the world |
-| Open Source Only | NixOS + Alpine Linux + MikroTik RouterOS. No vendor lock-in, ever.    |
+| Open Source Only | NixOS + MikroTik RouterOS. No vendor lock-in, ever.                   |
 | Financially Sane | ~3,600 EUR total. 120 students. Works out at ~30 EUR per student.     |
 
 * Architecture at a Glance
@@ -59,13 +59,12 @@ similar constraints.
   │  [web01   ]  Nginx + iPXE netboot images        │
   │  [kiwix01 ]  Offline Wikipedia / Khan Academy   │
   │                                                 │
-  │  [ct90051] ... [ct90070]                        │
-  │   20 × XFCE4 desktop containers (RDP)          │
+  │  Shared /nix/store + /home via NFS              │
   └────────────────────────────────────────────────┘
         |
   20 × Thin Clients  (HP ProDesk / Dell OptiPlex)
-  Alpine Linux netboot via iPXE  →  xfreerdp fullscreen
-  No local disk. No local state. Reboot = factory fresh.
+  NixOS diskless netboot via iPXE → XFCE4 desktop locally
+  tmpfs root, NFS /nix/store. Reboot = factory fresh.
 #+END_EXAMPLE
 
 * Links

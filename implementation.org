@@ -227,23 +227,26 @@ containers."web01" = {
 };
 #+END_SRC
 
-** 4.2 Alpine Linux Thin Client Image
-Build an Alpine Linux netboot image (kernel + initramfs) configured as a kiosk:
-- Auto-login as =kiosk= user
-- Launch =xfreerdp= in fullscreen, pointing to the student's assigned container
-- No writable local storage — pure RAM disk
+** 4.2 NixOS Diskless Thin Client
+The thin client is a full NixOS system, declared in =hosts/client/configuration.nix=
+and netbooted via iPXE:
+- tmpfs root (512 MB) — no local writes survive a reboot
+- =/nix/store= mounted read-only via NFS from the server (single store, all 20 clients
+  see the same paths)
+- =/home= mounted read-write via NFS for per-student persistent home directories
+- Local XFCE4 desktop with Firefox-ESR, LibreOffice, VLC, GIMP, Inkscape, etc.
+- Auth via sssd against the central LLDAP
+- Intel microcode loaded early (separate iPXE initrd segment, see =boot.ipxe= below)
 
-The iPXE boot script (=boot.ipxe=) maps each thin client's MAC address to a specific
-container IP for the RDP connection.
+To rebuild the client image: =nixos-rebuild build --flake .#client= on the server, then
+update the =clientSystem= store path in =hosts/web/configuration.nix= and switch.
 
 #+BEGIN_EXAMPLE
-# boot.ipxe (served by web01)
+# boot.ipxe (served by web01) — two initrds: microcode first, then main initrd
 #!ipxe
-set base http://172.20.0.21/alpine
-kernel ${base}/vmlinuz-lts alpine_repo=${base}/apks quiet
-initrd ${base}/initramfs-lts
-imgargs vmlinuz-lts ip=dhcp modloop=${base}/modloop-lts
-  rdp_host=172.20.90.${last-octet-of-ip}   # maps client IP to container
+kernel http://172.20.0.21/vmlinuz init=/nix/store/.../init ip=dhcp quiet
+initrd http://172.20.0.21/microcode.img
+initrd http://172.20.0.21/initrd
 boot
 #+END_EXAMPLE
 
@@ -309,8 +312,9 @@ For each HP ProDesk / Dell OptiPlex thin client:
 ** 6.3 Boot Test
 - [ ] Connect client to student LAN port on the CRS326 switch
 - [ ] Power on → client should receive DHCP from MikroTik
-- [ ] iPXE loads → Alpine Linux boots from HTTP → xfreerdp opens fullscreen
-- [ ] Verify RDP connects to the correct container
+- [ ] iPXE loads kernel + microcode.img + initrd over HTTP → NixOS boots
+- [ ] XFCE4 login screen appears; sssd auth against LLDAP works
+- [ ] NFS-mounted home directory is writable and persistent across reboots
 
 * Phase 7: Operational Validation
 

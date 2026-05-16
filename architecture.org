@@ -46,6 +46,8 @@
 - Students can safely install packages locally via `nix profile` without root privileges
 
 * Thin Clients (20x Refurbished Business PCs / e.g. HP ProDesk or Dell OptiPlex Micro)
-- Diskless, booting via iPXE
-- Minimal RAM-based Linux OS (NixOS Netboot or Alpine)
-- Kiosk mode: Direct start of `xfreerdp` (or `wlfreerdp`) in fullscreen, pointing to the student's assigned NixOS container
+- Diskless, booting via iPXE (kernel + initrd from web01 over HTTP)
+- NixOS netboot: tmpfs root + NFS-mounted /nix/store + NFS-mounted /home
+- Local XFCE4 desktop with locally-installed Firefox-ESR, LibreOffice, VLC, GIMP, etc.
+- Auth via sssd against the central LLDAP (ct-auth)
+- Reboot = factory fresh (zero local state)

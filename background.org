@@ -64,10 +64,11 @@ on-site technical capacity is not feasible.
   terminals. All computation runs on one server.
 - *Declarative, reproducible configuration:* NixOS. The entire system state lives in
   one Git repository. Any admin anywhere in the world can reproduce or repair it.
-- *Zero local state on clients:* Thin clients boot Alpine Linux from the network.
-  No local disk, no local infection, no local state. A reboot is a factory reset.
-- *Open Source only:* NixOS, Alpine Linux, MikroTik RouterOS. No proprietary
-  licenses, no vendor lock-in, no renewal costs.
+- *Zero local state on clients:* Thin clients PXE-boot NixOS into a tmpfs root with
+  /nix/store mounted read-only via NFS. No local disk, no local infection, no local
+  state. A reboot is a factory reset.
+- *Open Source only:* NixOS, MikroTik RouterOS. No proprietary licenses, no vendor
+  lock-in, no renewal costs.
 - *10-year target lifespan:* Hardware choices, component quality, and maintenance
   design are all optimised for longevity over flash.
 - *Remote maintainability:* The entire system — including out-of-band hardware
